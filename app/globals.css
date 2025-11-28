@@ -1,0 +1,60 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Smart Doc Chaser - Global Styles */
+
+/* Ensure minimum font size for accessibility (older demographic) */
+html {
+  font-size: 16px;
+}
+
+@media (min-width: 768px) {
+  html {
+    font-size: 18px;
+  }
+}
+
+/* Large touch targets for buttons */
+.btn {
+  @apply px-6 py-3 rounded-lg font-medium transition-colors duration-200 min-h-[48px] flex items-center justify-center;
+}
+
+.btn-primary {
+  @apply bg-trust-blue text-white hover:bg-trust-blue-dark;
+}
+
+.btn-success {
+  @apply bg-health-green text-white hover:bg-health-green-light;
+}
+
+.btn-warning {
+  @apply bg-accent-orange text-white hover:bg-accent-orange-light;
+}
+
+/* Status badges */
+.status-badge {
+  @apply px-3 py-1 rounded-full text-sm font-medium;
+}
+
+.status-pending {
+  @apply bg-accent-orange/20 text-accent-orange;
+}
+
+.status-completed {
+  @apply bg-health-green/20 text-health-green;
+}
+
+.status-expired {
+  @apply bg-red-100 text-red-600;
+}
+
+/* Form inputs - large and accessible */
+.input {
+  @apply w-full px-4 py-3 border border-gray-300 rounded-lg text-base focus:outline-none focus:ring-2 focus:ring-trust-blue focus:border-transparent;
+}
+
+/* Card component */
+.card {
+  @apply bg-white rounded-xl shadow-sm border border-gray-100 p-6;
+}
