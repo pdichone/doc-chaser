@@ -71,16 +71,19 @@ export default function RequestPage() {
 
       // Send SMS + Email notification to client via API route
       try {
+        const notificationPayload = {
+          client_name: formData.client_name.trim(),
+          client_phone: formData.client_phone.trim(),
+          client_email: formData.client_email.trim() || null,
+          document_type: formData.document_type,
+          upload_link: link,
+        }
+        console.log('Sending notification with payload:', notificationPayload)
+
         const notificationResponse = await fetch('/api/send-notification', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            client_name: formData.client_name.trim(),
-            client_phone: formData.client_phone.trim(),
-            client_email: formData.client_email.trim() || null,
-            document_type: formData.document_type,
-            upload_link: link,
-          }),
+          body: JSON.stringify(notificationPayload),
         })
 
         const notificationResult = await notificationResponse.json()

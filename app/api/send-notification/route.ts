@@ -48,10 +48,12 @@ export async function POST(request: NextRequest) {
 
     // Send SMS (always required)
     const smsMessage = getClientSMSTemplate(client_name, document_type, upload_link)
+    console.log('SMS message to send:', smsMessage)
+    console.log('SMS message length:', smsMessage.length)
     const smsResult = await sendSMS(client_phone, smsMessage)
     results.sms.sent = smsResult.success
     results.sms.error = smsResult.error || null
-    results.sms.debug = smsResult.debug || null
+    results.sms.debug = { apiResponse: smsResult.debug, messageSent: smsMessage }
 
     // Send Email (if provided)
     if (client_email) {

@@ -74,16 +74,29 @@ export async function sendSMS(
 }
 
 // Send Email
+// NOTE: ClickSend requires you to set up an email address in their dashboard first
+// Go to: ClickSend Dashboard -> Email -> Settings -> Email Addresses -> Add
+// Then copy the email_address_id to CLICKSEND_EMAIL_ADDRESS_ID env var
 export async function sendEmail(
   to: string,
   subject: string,
   body: string
 ): Promise<{ success: boolean; error?: string; debug?: unknown }> {
   try {
-    const fromEmail = process.env.CLICKSEND_FROM_EMAIL || 'noreply@smartdocchaser.com'
+    const emailAddressId = process.env.CLICKSEND_EMAIL_ADDRESS_ID
     const fromName = process.env.CLICKSEND_FROM_NAME || 'Smart Doc Chaser'
 
-    console.log('Sending Email to:', to, 'from:', fromEmail)
+    // If no email_address_id configured, skip email
+    if (!emailAddressId) {
+      console.warn('CLICKSEND_EMAIL_ADDRESS_ID not configured - skipping email')
+      return {
+        success: false,
+        error: 'Email not configured. Set CLICKSEND_EMAIL_ADDRESS_ID in environment variables.',
+        debug: { reason: 'missing_email_address_id' }
+      }
+    }
+
+    console.log('Sending Email to:', to, 'using email_address_id:', emailAddressId)
 
     const response = await fetch(`${CLICKSEND_API_BASE}/email/send`, {
       method: 'POST',
@@ -92,11 +105,10 @@ export async function sendEmail(
         'Authorization': getAuthHeader(),
       },
       body: JSON.stringify({
-        to: [{ email: to }],
+        to: [{ email: to, name: to.split('@')[0] }],
         from: {
-          email_address_id: null,
+          email_address_id: emailAddressId,
           name: fromName,
-          email: fromEmail,
         },
         subject: subject,
         body: body,
