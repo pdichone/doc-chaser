@@ -86,16 +86,28 @@ export async function sendEmail(
   body: string
 ): Promise<{ success: boolean; error?: string; debug?: unknown }> {
   try {
-    const emailAddressId = process.env.CLICKSEND_EMAIL_ADDRESS_ID
+    const emailAddressIdRaw = process.env.CLICKSEND_EMAIL_ADDRESS_ID
     const fromName = process.env.CLICKSEND_FROM_NAME || 'Smart Doc Chaser'
 
     // If no email_address_id configured, skip email
-    if (!emailAddressId) {
+    if (!emailAddressIdRaw) {
       console.warn('CLICKSEND_EMAIL_ADDRESS_ID not configured - skipping email')
       return {
         success: false,
         error: 'Email not configured. Set CLICKSEND_EMAIL_ADDRESS_ID in environment variables.',
         debug: { reason: 'missing_email_address_id' }
+      }
+    }
+
+    // Parse as integer (removes any trailing comments like "32592 #for now")
+    const emailAddressId = parseInt(emailAddressIdRaw, 10)
+
+    if (isNaN(emailAddressId)) {
+      console.error('CLICKSEND_EMAIL_ADDRESS_ID must be a number, got:', emailAddressIdRaw)
+      return {
+        success: false,
+        error: 'CLICKSEND_EMAIL_ADDRESS_ID must be a numeric ID from ClickSend dashboard',
+        debug: { reason: 'invalid_email_address_id', value: emailAddressIdRaw }
       }
     }
 
