@@ -41,6 +41,9 @@ export async function sendSMS(
             source: 'DocChaser',
           },
         ],
+        // Enable URL shortening - converts URLs to smsu.io/xxxxxx format
+        // This also enables click tracking
+        shorten_urls: true,
       }),
     })
 
