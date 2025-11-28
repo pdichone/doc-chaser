@@ -69,26 +69,27 @@ export default function RequestPage() {
 
       setUploadLink(link)
 
-      // Trigger n8n webhook if configured (for SMS sending)
-      const webhookUrl = process.env.NEXT_PUBLIC_N8N_CREATE_REQUEST_WEBHOOK
-      if (webhookUrl) {
-        fetch(webhookUrl, {
+      // Send SMS + Email notification to client via API route
+      try {
+        const notificationResponse = await fetch('/api/send-notification', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            request_id: data.id,
-            client_name: formData.client_name,
-            client_phone: formData.client_phone,
-            client_email: formData.client_email,
+            client_name: formData.client_name.trim(),
+            client_phone: formData.client_phone.trim(),
+            client_email: formData.client_email.trim() || null,
             document_type: formData.document_type,
-            deadline: formData.deadline,
             upload_link: link,
-            upload_token: data.upload_token,
           }),
-        }).catch(() => {
-          // Non-critical if webhook fails
-          console.log('Webhook not configured or failed')
         })
+
+        const notificationResult = await notificationResponse.json()
+        if (!notificationResult.success) {
+          console.warn('Notification partially failed:', notificationResult.results)
+        }
+      } catch (notifyError) {
+        // Non-critical - request was created, just notification failed
+        console.error('Failed to send notification:', notifyError)
       }
 
       setSuccess(true)

@@ -89,22 +89,19 @@ export default function UploadPage({ params }: UploadPageProps) {
         throw new Error('File uploaded but failed to update status.')
       }
 
-      // Trigger n8n webhook for processing (optional)
-      const webhookUrl = process.env.NEXT_PUBLIC_N8N_PROCESS_UPLOAD_WEBHOOK
-      if (webhookUrl) {
-        fetch(webhookUrl, {
+      // Notify broker that document was uploaded
+      try {
+        await fetch('/api/notify-broker', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            request_id: request.id,
-            upload_token: token,
-            file_url: fileUrl,
             client_name: request.client_name,
             document_type: request.document_type,
           }),
-        }).catch(() => {
-          // Non-critical, don't block success
         })
+      } catch {
+        // Non-critical, don't block success
+        console.error('Failed to notify broker')
       }
 
       setSuccess(true)
@@ -113,7 +110,7 @@ export default function UploadPage({ params }: UploadPageProps) {
     } finally {
       setUploading(false)
     }
-  }, [request, token])
+  }, [request])
 
   const handleDrag = useCallback((e: React.DragEvent) => {
     e.preventDefault()

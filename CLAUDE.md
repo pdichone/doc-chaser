@@ -64,10 +64,34 @@ Smart Doc Chaser is a document request and tracking system designed for health i
 - **Styling:** Tailwind CSS
 - **Database:** Supabase Postgres
 - **File storage:** Supabase Storage (future: GDrive sync)
-- **SMS:** ClickSend (via n8n node) - chosen over Twilio/Plivo for native n8n integration, multi-channel support (SMS + fax), free inbound SMS, and 24/7 support
-- **Email:** SendGrid (optional)
-- **Workflow engine:** n8n Cloud (~$20/month managed service)
+- **SMS + Email:** ClickSend (via Next.js API routes) - chosen over Twilio/Plivo for multi-channel support (SMS + email), free inbound SMS, and 24/7 support
+- **Cron Jobs:** Vercel Cron (for automated reminders)
 - **Hosting:** Vercel
+
+## Environment Variables
+
+```
+# Supabase
+NEXT_PUBLIC_SUPABASE_URL=your-supabase-url
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
+SUPABASE_SERVICE_ROLE_KEY=your-service-role-key  # For cron jobs
+
+# ClickSend (SMS + Email)
+CLICKSEND_USERNAME=your-clicksend-username
+CLICKSEND_API_KEY=your-clicksend-api-key
+CLICKSEND_FROM_EMAIL=noreply@yourdomain.com
+CLICKSEND_FROM_NAME=Smart Doc Chaser
+
+# Broker Contact (for notifications)
+BROKER_PHONE=+1234567890
+BROKER_EMAIL=broker@example.com
+
+# App URL (for links in messages)
+NEXT_PUBLIC_APP_URL=https://your-app-url.vercel.app
+
+# Cron Security (optional)
+CRON_SECRET=your-random-secret
+```
 
 ## Project Structure
 
@@ -81,17 +105,24 @@ smart-doc-chaser/
 │   │       └── page.tsx        # Client upload page
 │   ├── request/
 │   │   └── page.tsx            # Broker request form
-│   └── tracker/
-│       └── page.tsx            # Broker doc tracker
-├── components/
-│   ├── FileUpload.tsx          # Drag-drop upload component
-│   ├── StatusBadge.tsx         # Color-coded status
-│   └── RequestForm.tsx         # Broker form component
+│   ├── tracker/
+│   │   └── page.tsx            # Broker doc tracker
+│   └── api/
+│       ├── send-notification/
+│       │   └── route.ts        # Send SMS + Email to client
+│       ├── notify-broker/
+│       │   └── route.ts        # Notify broker on upload
+│       └── cron/
+│           └── send-reminders/
+│               └── route.ts    # Automated reminders cron
 ├── lib/
 │   ├── supabase.ts             # Supabase client setup
+│   ├── clicksend.ts            # ClickSend SMS + Email helpers
 │   └── types.ts                # TypeScript types
 ├── sql/
-│   └── schema.sql              # Database migration
+│   ├── schema.sql              # Database migration
+│   └── storage-policies.sql    # Storage bucket policies
+├── vercel.json                 # Vercel Cron configuration
 └── public/                     # Static assets
 ```
 
@@ -116,32 +147,46 @@ smart-doc-chaser/
 | last_reminder_at | timestamp | Reminder tracking |
 | reminders_stopped | boolean | Default false |
 
-## n8n Workflows
+## API Routes
 
-### Workflow 1: Create Document Request
-Trigger: Broker form submission → webhook
-1. Receive form data (client name, phone, email, doc type, deadline)
-2. Generate UUID upload token
-3. Build upload link: `/upload/[token]`
-4. Insert record into Supabase
-5. Send SMS via ClickSend
-6. Send email (optional)
-7. Schedule reminders
+### POST /api/send-notification
+Sends SMS + Email to client when broker creates a request.
+- Body: `{ client_name, client_phone, client_email?, document_type, upload_link }`
+- Sends SMS (always) + Email (if provided)
 
-### Workflow 2: Process Upload
-Trigger: Supabase Storage webhook or frontend callback
-1. Receive upload token + file path
-2. Fetch corresponding pending request
-3. Build normalized filename: `JohnSmith_ProofOfIncome_2025-11-26.pdf`
-4. Move file to: `/clients/JohnSmith/ProofOfIncome/<filename>`
-5. Update DB: status → completed, set uploaded_at
-6. Notify broker via SMS/email
+### POST /api/notify-broker
+Notifies broker when client uploads a document.
+- Body: `{ client_name, document_type }`
+- Uses BROKER_PHONE and BROKER_EMAIL env vars
 
-### Workflow 3: Reminders (Cron-based)
-1. Find pending requests
-2. 48 hours since creation → send reminder
-3. 24 hours before deadline → send urgent reminder
-4. Past deadline → mark expired, notify broker
+### GET /api/cron/send-reminders
+Vercel Cron job for automated reminders (runs every 6 hours).
+- Finds pending requests
+- 48 hours since creation → send first reminder
+- 24 hours before deadline → send urgent reminder
+- Past deadline → mark expired, notify broker
+
+## Workflows
+
+### Create Document Request Flow
+1. Broker fills form on `/request`
+2. Frontend inserts record into Supabase (upload_token auto-generated)
+3. Frontend calls `/api/send-notification`
+4. Client receives SMS + Email with upload link
+
+### Process Upload Flow
+1. Client visits `/upload/[token]`
+2. Frontend validates token against Supabase
+3. Client uploads file → Supabase Storage
+4. Frontend updates DB: status → completed
+5. Frontend calls `/api/notify-broker`
+6. Broker receives SMS + Email
+
+### Reminder Flow (Automated)
+1. Vercel Cron triggers `/api/cron/send-reminders` every 6 hours
+2. Finds pending requests needing reminders
+3. Sends SMS + Email reminders
+4. Marks expired requests
 
 ## Frontend Pages
 
