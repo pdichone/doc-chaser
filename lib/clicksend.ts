@@ -128,7 +128,9 @@ export function getClientSMSTemplate(
   documentType: string,
   uploadLink: string
 ): string {
-  return `Hi ${clientName}, please upload your ${documentType} here: ${uploadLink}`
+  // Keep SMS short (160 char limit) and warm
+  const firstName = clientName.split(' ')[0]
+  return `Hi ${firstName}! We need your ${documentType}. Please upload here: ${uploadLink || '[link missing]'}`
 }
 
 export function getClientEmailTemplate(
@@ -136,19 +138,22 @@ export function getClientEmailTemplate(
   documentType: string,
   uploadLink: string
 ): { subject: string; body: string } {
+  const firstName = clientName.split(' ')[0]
   return {
-    subject: `Document Request: ${documentType}`,
-    body: `Hi ${clientName},
+    subject: `Action Needed: ${documentType}`,
+    body: `Hi ${firstName},
 
-Your insurance broker has requested the following document:
-${documentType}
+Hope you're doing well! Your insurance broker needs a quick document from you.
 
-Please click the link below to upload:
-${uploadLink}
+Document needed: ${documentType}
 
-Thank you!
+Uploading is easy - just click the link below:
+${uploadLink || '[link not available]'}
 
-- Smart Doc Chaser`,
+This only takes a minute and helps us get your coverage sorted faster.
+
+Thanks so much!
+Your Insurance Team`,
   }
 }
 
@@ -180,10 +185,11 @@ export function getReminderSMSTemplate(
   uploadLink: string,
   isUrgent: boolean = false
 ): string {
+  const firstName = clientName.split(' ')[0]
   if (isUrgent) {
-    return `URGENT: ${clientName}, your ${documentType} is due soon. Please upload now: ${uploadLink}`
+    return `Hi ${firstName}! Quick reminder - we still need your ${documentType} soon. Upload here: ${uploadLink || '[link]'}`
   }
-  return `Reminder: ${clientName}, please upload your ${documentType}: ${uploadLink}`
+  return `Hi ${firstName}! Friendly reminder - we still need your ${documentType}. Upload here: ${uploadLink || '[link]'}`
 }
 
 export function getReminderEmailTemplate(
@@ -192,20 +198,22 @@ export function getReminderEmailTemplate(
   uploadLink: string,
   isUrgent: boolean = false
 ): { subject: string; body: string } {
-  const urgentPrefix = isUrgent ? 'URGENT: ' : ''
+  const firstName = clientName.split(' ')[0]
+  const urgentPrefix = isUrgent ? 'Time Sensitive: ' : 'Friendly Reminder: '
   return {
-    subject: `${urgentPrefix}Reminder: ${documentType} needed`,
-    body: `Hi ${clientName},
+    subject: `${urgentPrefix}${documentType} still needed`,
+    body: `Hi ${firstName},
 
-${isUrgent ? 'This is an urgent reminder - your deadline is approaching!' : 'This is a friendly reminder.'}
+${isUrgent ? 'Just a quick heads up - the deadline for your document is coming up soon!' : 'Hope you\'re having a great day! Just a friendly nudge.'}
 
-We still need your ${documentType}.
+We still need your ${documentType} to move forward with your coverage.
 
-Please click the link below to upload:
-${uploadLink}
+Click here to upload (takes less than a minute):
+${uploadLink || '[link not available]'}
 
-Thank you!
+If you have any questions, just reply to this email.
 
-- Smart Doc Chaser`,
+Thanks!
+Your Insurance Team`,
   }
 }

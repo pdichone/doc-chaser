@@ -18,12 +18,27 @@ export async function POST(request: NextRequest) {
       upload_link,
     } = body
 
+    // Log received data for debugging
+    console.log('Notification request received:', {
+      client_name,
+      client_phone,
+      client_email,
+      document_type,
+      upload_link,
+      upload_link_length: upload_link?.length,
+    })
+
     // Validate required fields
-    if (!client_name || !client_phone || !document_type || !upload_link) {
+    if (!client_name || !client_phone || !document_type) {
       return NextResponse.json(
         { error: 'Missing required fields' },
         { status: 400 }
       )
+    }
+
+    // Warn if upload_link is missing but continue
+    if (!upload_link) {
+      console.warn('WARNING: upload_link is missing or empty!')
     }
 
     const results = {
