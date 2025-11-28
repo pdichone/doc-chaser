@@ -20,10 +20,12 @@ function getAuthHeader(): string {
 export async function sendSMS(
   to: string,
   message: string
-): Promise<{ success: boolean; error?: string }> {
+): Promise<{ success: boolean; error?: string; debug?: unknown }> {
   try {
     // Normalize phone number (remove spaces, dashes, etc.)
     const normalizedPhone = to.replace(/[\s\-\(\)]/g, '')
+
+    console.log('Sending SMS to:', normalizedPhone)
 
     const response = await fetch(`${CLICKSEND_API_BASE}/sms/send`, {
       method: 'POST',
@@ -43,24 +45,30 @@ export async function sendSMS(
     })
 
     const data = await response.json()
+    console.log('ClickSend SMS response:', JSON.stringify(data, null, 2))
 
     if (!response.ok) {
       console.error('ClickSend SMS error:', data)
-      return { success: false, error: data.response_msg || 'SMS failed' }
+      return { success: false, error: data.response_msg || 'SMS failed', debug: data }
     }
 
     // Check if message was sent successfully
     const messageResult = data.data?.messages?.[0]
     if (messageResult?.status !== 'SUCCESS') {
-      return { success: false, error: messageResult?.status || 'SMS failed' }
+      return {
+        success: false,
+        error: messageResult?.status || 'SMS failed',
+        debug: { messageResult, fullResponse: data }
+      }
     }
 
-    return { success: true }
+    return { success: true, debug: data }
   } catch (error) {
     console.error('SMS send error:', error)
     return {
       success: false,
-      error: error instanceof Error ? error.message : 'Unknown error'
+      error: error instanceof Error ? error.message : 'Unknown error',
+      debug: { caught: String(error) }
     }
   }
 }
@@ -70,10 +78,12 @@ export async function sendEmail(
   to: string,
   subject: string,
   body: string
-): Promise<{ success: boolean; error?: string }> {
+): Promise<{ success: boolean; error?: string; debug?: unknown }> {
   try {
     const fromEmail = process.env.CLICKSEND_FROM_EMAIL || 'noreply@smartdocchaser.com'
     const fromName = process.env.CLICKSEND_FROM_NAME || 'Smart Doc Chaser'
+
+    console.log('Sending Email to:', to, 'from:', fromEmail)
 
     const response = await fetch(`${CLICKSEND_API_BASE}/email/send`, {
       method: 'POST',
@@ -94,18 +104,20 @@ export async function sendEmail(
     })
 
     const data = await response.json()
+    console.log('ClickSend Email response:', JSON.stringify(data, null, 2))
 
     if (!response.ok) {
       console.error('ClickSend Email error:', data)
-      return { success: false, error: data.response_msg || 'Email failed' }
+      return { success: false, error: data.response_msg || 'Email failed', debug: data }
     }
 
-    return { success: true }
+    return { success: true, debug: data }
   } catch (error) {
     console.error('Email send error:', error)
     return {
       success: false,
-      error: error instanceof Error ? error.message : 'Unknown error'
+      error: error instanceof Error ? error.message : 'Unknown error',
+      debug: { caught: String(error) }
     }
   }
 }

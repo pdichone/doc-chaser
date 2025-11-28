@@ -27,8 +27,8 @@ export async function POST(request: NextRequest) {
     }
 
     const results = {
-      sms: { sent: false, error: null as string | null },
-      email: { sent: false, error: null as string | null },
+      sms: { sent: false, error: null as string | null, debug: null as unknown },
+      email: { sent: false, error: null as string | null, debug: null as unknown },
     }
 
     // Send SMS (always required)
@@ -36,6 +36,7 @@ export async function POST(request: NextRequest) {
     const smsResult = await sendSMS(client_phone, smsMessage)
     results.sms.sent = smsResult.success
     results.sms.error = smsResult.error || null
+    results.sms.debug = smsResult.debug || null
 
     // Send Email (if provided)
     if (client_email) {
@@ -47,6 +48,7 @@ export async function POST(request: NextRequest) {
       )
       results.email.sent = emailResult.success
       results.email.error = emailResult.error || null
+      results.email.debug = emailResult.debug || null
     }
 
     // Return results
