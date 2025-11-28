@@ -141,8 +141,14 @@ export function getClientSMSTemplate(
   uploadLink: string
 ): string {
   // Keep SMS short (160 char limit) and warm
+  // Note: ClickSend trial may strip URLs - upgrade account or verify domain
   const firstName = clientName.split(' ')[0]
-  return `Hi ${firstName}! We need your ${documentType}. Please upload here: ${uploadLink || '[link missing]'}`
+
+  // If link is provided, include it. Otherwise show message without link
+  if (uploadLink) {
+    return `Hi ${firstName}! Please upload your ${documentType}: ${uploadLink}`
+  }
+  return `Hi ${firstName}! Your broker needs your ${documentType}. Check your email for the upload link.`
 }
 
 export function getClientEmailTemplate(
